@@ -5,9 +5,11 @@ class NeuralNet():
     def __init__(self) -> None:
         self.prototxt = 'model/colorization_deploy_v2.prototxt'
         self.model = 'model/colorization_release_v2.caffemodel'
+        # Probabilities for 313 quantized colour blocks; Points in the quantized ab space.
         self.points = 'model/pts_in_hull.npy'
         self.net = cv2.dnn.readNetFromCaffe(self.prototxt, self.model)
         self.pts = np.load(self.points)
+
         # Add the cluster centers as 1x1 convolutions to the model
         self.class8 = self.net.getLayerId("class8_ab")
         self.conv8 = self.net.getLayerId("conv8_313_rh")
