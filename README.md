@@ -1,4 +1,4 @@
-# colorizer
+# Colorizer GUI using CNNs
 An app using a neural network approach to colorize images and videos.
 <br>
 The application "hallucinates" possible colors (so an acceptable result is a probable result, not necessarily the real truth)
