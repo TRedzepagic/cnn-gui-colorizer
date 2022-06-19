@@ -4,6 +4,10 @@ An app using a neural network approach to colorize images and videos.
 The application (the neural net rather) "hallucinates" possible colors (so an acceptable result is a probable result, not necessarily the real truth).
 <br>
 GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pleasant user experience.
+## Screenshots
+![Screenshot1](screenshots/screenshot-turtle.png)
+<br>
+![Screenshot2](screenshots/screenshot-brain.png)
 ## Installation & Usage
 1. Check out [R. Zhang's instructions on how to get the trained model.](https://github.com/richzhang/colorization/tree/caffe/colorization)
 2. Clone repository
