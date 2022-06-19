@@ -1,0 +1,7 @@
+model/
+colorizedFrames/
+colorizedVideos/
+colorizedImages/
+README.pdf
+__pycache__
+.vscode

@@ -1,0 +1,5 @@
+dearpygui
+dearpygui_ext
+numpy
+opencv-contrib-python
+pyautogui
