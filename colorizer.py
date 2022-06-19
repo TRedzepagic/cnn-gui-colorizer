@@ -63,15 +63,12 @@ class Colorizer(Thread):
         return savePath
 
     def _cleanupPreviousVideoFrames(self):
-        try:
-            framePath = self.getColorizedVideoFramesPath()
-            frames = os.listdir(framePath)
-            msg = "Deleting frames in: {0}".format(framePath)
-            self.logger.logMsg("Colorizer", msg)
-            for frame in frames:
-                os.remove(framePath + "/" + frame)
-        except Exception as e:
-            raise e
+        framePath = self.getColorizedVideoFramesPath()
+        frames = os.listdir(framePath)
+        msg = "Deleting frames in: {0}".format(framePath)
+        self.logger.logMsg("Colorizer", msg)
+        for frame in frames:
+            os.remove(framePath + "/" + frame)
     
     def signalGUIToDisplayItem(self, path, type):
         """
@@ -157,7 +154,7 @@ class Colorizer(Thread):
                     self.logger.logMsg("Colorizer", msg, "WARNING")
             except Exception as e:
                 msg = str(e)
-                self.logger.logMsg(msg, "CRITICAL")
+                self.logger.logMsg("Colorizer", msg, "CRITICAL")
             finally:
                 vid.release()
                 cv2.destroyAllWindows()
@@ -193,7 +190,6 @@ class Colorizer(Thread):
         
         msg = "Video colorization complete."
         self.logger.logMsg("Colorizer", msg)   
-        
         videoWriter.release()
         return      
 
