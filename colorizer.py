@@ -17,10 +17,7 @@ class Colorizer(Thread):
         self.videoColorizationCanceled = Event()
 
         self.imgLock = Lock()
-        self.vidLock = Lock()
-
-        self.imgNeuralNet = None
-        self.vidNeuralNet = None
+        self.videoLock = Lock()
        
         self._colorizedVideoFramesPath = "./colorizedFrames"
 
@@ -31,14 +28,6 @@ class Colorizer(Thread):
         self.videoColorizationProgress = 0
 
         self._setupOutputFolders()
-    
-    def initImageNeuralNetwork(self):
-        if self.imgNeuralNet is None:
-            self.imgNeuralNet = NeuralNet()
-    
-    def initVideoNeuralNetwork(self):
-        if self.vidNeuralNet is None:
-            self.vidNeuralNet = NeuralNet()
 
     def _setupOutputFolders(self):
         outputFolders = [
@@ -80,7 +69,6 @@ class Colorizer(Thread):
     def colorizeBWImage(self, path):
         with self.imgLock:
             try:
-                self.initImageNeuralNetwork()
                 msg = "Colorizing: {0}...".format(path)
                 self.logger.logMsg("Colorizer", msg)
 
@@ -88,11 +76,12 @@ class Colorizer(Thread):
                 self.signalGUIToDisplayItem(path, "IMAGE")
 
                 image = cv2.imread(path)
-                colorized = self.imgNeuralNet.colorize(image)
+                NNet = NeuralNet()
+                colorizedImage = NNet.colorize(image)
                 
                 # splitPath will evaluate to [NAME, EXTENSION]
                 savePath = self.createSavePath(path)
-                cv2.imwrite(savePath, colorized)
+                cv2.imwrite(savePath, colorizedImage)
 
                 msg = "Image colorization complete. Saving image to {0}.".format(savePath)
                 self.logger.logMsg("Colorizer", msg)
@@ -102,14 +91,12 @@ class Colorizer(Thread):
             except Exception as e:
                 msg = str(e)
                 self.logger.logMsg("Colorizer", msg, "CRITICAL")
-            finally:
-                self.imgNeuralNet = None
-        return 
+            return 
 
     def colorizeBWVideo(self, path):
-        with self.vidLock:
+        with self.videoLock:
             try:
-                self.initVideoNeuralNetwork()
+                NNet = NeuralNet()
                 self._cleanupPreviousVideoFrames()
                 self.videoColorizationInProgress.set()
                 vid = cv2.VideoCapture(path)
@@ -141,8 +128,10 @@ class Colorizer(Thread):
                     ret, frame = vid.read()
                     if not ret:
                         break
-                    colorizedFrame = self.vidNeuralNet.colorize(frame)
-                    cv2.imwrite("./colorizedFrames/%d.jpg" % count, colorizedFrame)
+                    
+                    colorizedFrame = NNet.colorize(frame)
+                    
+                    cv2.imwrite("./colorizedFrames/{0}.jpg".format(str(count)), colorizedFrame)
                     count += 1
 
                 if not self.videoColorizationCanceled.is_set():
@@ -157,12 +146,10 @@ class Colorizer(Thread):
                 self.logger.logMsg("Colorizer", msg, "CRITICAL")
             finally:
                 vid.release()
-                cv2.destroyAllWindows()
                 self.videoColorizationInProgress.clear()
                 self.videoColorizationCanceled.clear()
                 self.videoColorizationProgress = 0
-                self.vidNeuralNet = None
-        return
+            return
     
     def cancelVideoColorization(self):
         msg = "Canceling video colorization..."
