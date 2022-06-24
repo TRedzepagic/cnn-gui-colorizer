@@ -4,10 +4,7 @@ An app using a neural network approach to colorize images and videos.
 The application (the neural net rather) "hallucinates" possible colors (so an acceptable result is a probable result, not necessarily the real truth).
 <br>
 GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pleasant user experience.
-## Screenshots
-![Screenshot1](screenshots/screenshot-turtle.png)
-<br>
-![Screenshot2](screenshots/screenshot-brain.png)
+
 ## Installation & Usage
 1. Clone this repository
 2. Download the trained model by executing ```bash getModel.sh``` or ```./getModel.sh```. This will download the necessary files from [R. Zhang's repository and university website.](https://github.com/richzhang/colorization/tree/caffe/colorization) Alternatively you can hunt the files yourself:
@@ -27,6 +24,11 @@ GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pl
 -   Video colorization progress bar
 -   File picker, no need for program arguments
 -   RGB information on mouse hover
+
+## Screenshots
+![Screenshot1](screenshots/screenshot-turtle.png)
+<br>
+![Screenshot2](screenshots/screenshot-brain.png)
 
 ## Resources
 - [Zhang, R., Isola, P., & Efros, A. A. (2016). Colorful Image Colorization. ECCV.](https://arxiv.org/pdf/1603.08511.pdf)
