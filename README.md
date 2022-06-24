@@ -14,7 +14,7 @@ GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pl
 3. For video reproduction, you need MPV: [MPV Installation](https://mpv.io/installation/), or quickly for Debian based distros: ```sudo apt install mpv```
 4. For displaying images, you need sxiv: ```sudo apt install sxiv```
 5. ```pip3 install -r requirements.txt```
-6. Execute with ```python3 main_DPG.py```
+6. Execute with ```python3 main.py```
 
 ## Features
 -   Colorize images
