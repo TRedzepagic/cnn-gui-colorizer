@@ -7,7 +7,7 @@ GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pl
 
 ## Installation & Usage
 1. Clone this repository
-2. Download the trained model by executing ```bash getModel.sh``` or ```./getModel.sh```. This will download the necessary files from [R. Zhang's repository and university website.](https://github.com/richzhang/colorization/tree/caffe/colorization) Alternatively you can hunt the files yourself:
+2. Download the trained model by executing ```bash getModel.sh``` or ```./getModel.sh```. This will download the necessary files from [R. Zhang's repository and university website.](https://github.com/richzhang/colorization/tree/caffe/colorization) Alternatively you can hunt the files yourself (put them in a folder called ```model```):
     - colorization_deploy_v2.prototxt
     - colorization_release_v2.caffemodel
     - pts_in_hull.npy
