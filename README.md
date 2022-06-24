@@ -9,12 +9,15 @@ GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pl
 <br>
 ![Screenshot2](screenshots/screenshot-brain.png)
 ## Installation & Usage
-1. Check out [R. Zhang's instructions on how to get the trained model.](https://github.com/richzhang/colorization/tree/caffe/colorization)
-2. Clone repository
+1. Clone this repository
+2. Download the trained model by executing ```bash getModel.sh``` or ```./getModel.sh```. This will download the necessary files from [R. Zhang's repository and university website.](https://github.com/richzhang/colorization/tree/caffe/colorization) Alternatively you can hunt the files yourself:
+    - colorization_deploy_v2.prototxt
+    - colorization_release_v2.caffemodel
+    - pts_in_hull.npy
 3. For video reproduction, you need MPV: [MPV Installation](https://mpv.io/installation/), or quickly for Debian based distros: ```sudo apt install mpv```
 4. For displaying images, you need sxiv: ```sudo apt install sxiv```
-5. ```pip3 install -r requirements.txt```
-6. Execute with ```python3 main.py```
+5. Execute ```pip3 install -r requirements.txt``` to download all necessary libraries
+6. Execute with ```python3 main.py``` or ```./main.py```
 
 ## Features
 -   Colorize images
