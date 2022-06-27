@@ -11,7 +11,7 @@ GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pl
     - colorization_deploy_v2.prototxt
     - colorization_release_v2.caffemodel
     - pts_in_hull.npy
-3. For video reproduction, you need MPV: [MPV Installation](https://mpv.io/installation/), or quickly for Debian based distros: ```sudo apt install mpv```
+3. For video reproduction, you need MPV: [MPV Installation](https://mpv.io/installation/), or quickly for Debian based distros: <br> ```sudo apt install mpv```
 4. For displaying images, you need sxiv: ```sudo apt install sxiv```
 5. Other packages that you need can be installed with:
    - ```sudo apt install python3-tk python3-dev pip3 scrot```
