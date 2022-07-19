@@ -14,7 +14,7 @@ GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pl
 3. For video reproduction, you need MPV: [MPV Installation](https://mpv.io/installation/), or quickly for Debian based distros: <br> ```sudo apt install mpv```
 4. For displaying images, you need sxiv: ```sudo apt install sxiv```
 5. Other packages that you need can be installed with:
-   - ```sudo apt install python3-tk python3-dev pip3 scrot```
+   - ```sudo apt install python3-tk python3-dev python3-pip scrot```
 6. Execute ```pip3 install -r requirements.txt``` to download all necessary libraries
 7. Execute with ```python3 main.py``` or ```./main.py```
 

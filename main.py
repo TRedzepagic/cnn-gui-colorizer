@@ -150,7 +150,7 @@ if __name__ == "__main__":
         rgbInspectorProc = multiprocessing.Process(target=RGBInspect, args=[rgbQueue])
         rgbInspectorProc.start()
         
-        dpg.create_viewport(title='Image & Video Colorizer (DearPyGUI, OpenCV, CNN)', resizable=False, width=1280, height=720)
+        dpg.create_viewport(title='Image & Video Colorizer (DearPyGUI, OpenCV, CNN)', resizable=True, width=1280, height=720)
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.set_exit_callback(terminateProgram)
