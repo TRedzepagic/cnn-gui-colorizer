@@ -127,7 +127,7 @@ if __name__ == "__main__":
             dpg.add_file_extension(".avi", color=(0, 255, 0, 255))
 
 
-        with dpg.window(no_title_bar=True, no_close=True, no_bring_to_front_on_focus=True, no_move=True, width=1280, height=720) as root:
+        with dpg.window(no_title_bar=False, no_close=False, no_bring_to_front_on_focus=False, no_move=False, width=1280, height=720) as root:
             dpg.add_button(label="Please select your image or video to colorize...", width=1280, height=50, callback=lambda: dpg.show_item("file_dialog_tag"))
             dpg.add_text(tag="rgbi", default_value="Loading RGB Inspector...")
             dpg.add_button(label="Cancel video colorization", tag="cancelColorizationButton", width=1280, height=50, callback=cancelColorization)

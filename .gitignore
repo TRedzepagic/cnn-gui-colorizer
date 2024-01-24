@@ -1,4 +1,4 @@
-model/
+model/colorization_release_v2.caffemodel
 colorizedFrames/
 colorizedVideos/
 colorizedImages/
