@@ -11,7 +11,7 @@ GUI written in [DearPyGui](https://github.com/hoffstadt/DearPyGui) to allow a pl
    - ```sudo apt install python3-tk python3-dev python3-pip```
 3. Execute ```pip3 install -r requirements.txt``` to download all necessary libraries
 4. Fetch the model assets if they are missing:
-
+   
 ```bash
 python3 scripts/download_model.py
 ```
@@ -29,6 +29,10 @@ If you want to keep the model somewhere else, point the app at it with `COLORIZE
 ```bash
 COLORIZER_MODEL_DIR=/path/to/model python3 main.py
 ```
+## Running from Releases
+1. Download the latest release for either Linux or Windows
+2. Extract it
+3. Run the .exe or ./cnn-colorizer (Linux)
 
 ### UI Scaling
 The app auto-scales its UI on large displays and also exposes a `UI scale` slider in the main window.
