@@ -46,7 +46,7 @@ The preview is shown side by side: black and white on the left, colorized output
 
 The video preview is frame-based and muted. DearPyGUI does not expose a dedicated video player widget, so playback is implemented by updating textures inside the GUI.
 
-If the model weights are missing, the app opens a modal dialog with buttons to download the model through `gdown` or open the manual download URL in a browser.
+If the model weights are missing, the app opens a modal dialog with a `Download model` action and a copyable manual download URL.
 
 ## Packaging
 ### Process Name
@@ -69,19 +69,14 @@ python3 scripts/build_binary.py --clean
 
 The output is written to `dist/cnn-colorizer/`. The packaged app includes the lightweight model metadata files and downloads the `colorization_release_v2.caffemodel` on demand through the in-app model dialog.
 
-The packaged app also includes the sample images and videos from this repository under `examples/bwImages` and `examples/bwVideos`.
+The packaged app also includes the sample images and videos from this repository under `examples/bwImages` and `examples/bwVideos`. The file picker opens there automatically when those examples are present.
 
-The app also exposes an `Open examples folder` button and points the file picker at the bundled examples when they are present.
-
-For Windows and macOS, build on the target OS. The PyInstaller spec in this repository is intended for Linux, Windows, and macOS native builds, but final binaries should still be produced and smoke-tested on each platform separately.
-
-The macOS build also emits `dist/cnn-colorizer.app`.
+Build native bundles on the target OS. Portable release bundles are currently produced for Linux and Windows. On macOS, run the app from source for now.
 
 ### GitHub Releases
 The repository includes a GitHub Actions workflow at `.github/workflows/release.yml`.
 
-- Publishing a GitHub release builds portable archives for Linux, Windows, and macOS.
-- The macOS release asset is a zip archive containing `cnn-colorizer.app`.
+- Publishing a GitHub release builds portable archives for Linux and Windows.
 - The release assets are uploaded to the GitHub release page automatically.
 - Manual runs from the Actions tab also produce downloadable workflow artifacts.
 

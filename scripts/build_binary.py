@@ -30,6 +30,13 @@ def parseArgs():
 
 def main():
     args = parseArgs()
+    if sys.platform == "darwin":
+        print(
+            "macOS packaged builds are disabled. Run the app from source on macOS.",
+            file=sys.stderr,
+        )
+        return 1
+
     missingAssets = getMissingModelAssets()
     if missingAssets:
         if args.skip_model_download:

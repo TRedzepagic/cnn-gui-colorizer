@@ -31,6 +31,14 @@ def getAppBaseDir():
     return os.path.dirname(os.path.abspath(__file__))
 
 
+def isFrozenApp():
+    return bool(getattr(sys, "frozen", False))
+
+
+def isFrozenLinuxApp():
+    return isFrozenApp() and sys.platform.startswith("linux")
+
+
 def resolveResourcePath(*pathParts):
     return os.path.join(getAppBaseDir(), *pathParts)
 

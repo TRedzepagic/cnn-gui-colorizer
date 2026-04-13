@@ -19,14 +19,14 @@ from model_utils import (
 from runtime_support import (
     APP_WINDOW_TITLE,
     configureProcessIdentity,
-    openExternalPath,
-    openExternalUrl,
+    isFrozenLinuxApp,
     resolveResourcePath,
 )
 from work_object import ColorizationWorkObject
 
 DEFAULT_VIEWPORT_WIDTH = 1280
 DEFAULT_VIEWPORT_HEIGHT = 720
+MODEL_DIALOG_CONTENT_WIDTH = 840
 MIN_UI_SCALE = 0.75
 MAX_UI_SCALE = 3.0
 CONTROL_COLUMN_RATIO = 0.33
@@ -59,6 +59,9 @@ def clamp(value, minimum, maximum):
 
 
 def getAutoUIScale(viewportWidth, viewportHeight):
+    if isFrozenLinuxApp():
+        return 1.0
+
     autoScale = max(viewportWidth / 1920.0, viewportHeight / 1080.0, 1.0)
     return round(clamp(autoScale, 1.0, 2.5), 2)
 
@@ -216,27 +219,6 @@ def handlePrimaryAction():
     if examplesDirectory is not None:
         dpg.configure_item("file_dialog_tag", default_path=examplesDirectory)
     dpg.show_item("file_dialog_tag")
-
-
-def openExamplesFolder():
-    examplesDirectory = getExamplesDirectory()
-    if examplesDirectory is None:
-        if logger is not None:
-            logger.logMsg("Main", "Examples folder not found.", "WARNING")
-        return
-
-    if openExternalPath(examplesDirectory):
-        if logger is not None:
-            logger.logMsg("Main", "Opened examples folder.", "INFO")
-        return
-
-    if logger is not None:
-        logger.logMsg(
-            "Main",
-            "Unable to open examples folder: {0}".format(examplesDirectory),
-            "CRITICAL",
-        )
-
 
 def getGUIStartupError():
     displayName = os.environ.get("DISPLAY")
@@ -470,20 +452,19 @@ def startModelDownload():
     Thread(target=_downloadModelAssetsWorker, daemon=True).start()
 
 
-def openModelDownloadPage():
+def copyModelDownloadLink():
     global modelDownloadStatusMessage
 
     try:
-        opened = openExternalUrl(MODEL_MANUAL_DOWNLOAD_URL)
-        if not opened:
-            raise RuntimeError("Unable to open the model download page in a browser.")
-
-        modelDownloadStatusMessage = "Opened the model download page in the default browser."
+        dpg.set_clipboard_text(MODEL_MANUAL_DOWNLOAD_URL)
+        modelDownloadStatusMessage = "Copied the model download link to the clipboard."
         syncModelDialogState()
     except Exception as e:
-        errorMessage = "Unable to open the model download page: {0}".format(str(e))
+        errorMessage = "Unable to copy the model download link. Manual URL: {0}".format(
+            MODEL_MANUAL_DOWNLOAD_URL,
+        )
         if logger is not None:
-            logger.logMsg("Main", errorMessage, "CRITICAL")
+            logger.logMsg("Main", "{0} ({1})".format(errorMessage, str(e)), "CRITICAL")
         showModelMissingDialog(errorMessage)
 
 
@@ -562,7 +543,7 @@ def calculateLayoutMetrics(viewportWidth, viewportHeight, uiScaleValue):
 
     buttonHeight = max(int(50 * uiScaleValue), 50)
     sliderWidth = controlColumnWidth
-    headerControlsHeight = max(int(300 * uiScaleValue), 260)
+    headerControlsHeight = max(int(240 * uiScaleValue), 210)
     headerGap = max(int(20 * uiScaleValue), 12)
     contentHeight = max(viewportHeight - headerControlsHeight - headerGap - pageMargin, 320)
     comparisonHeight = max(int(contentHeight * 0.52), 300)
@@ -627,11 +608,6 @@ def syncMainWindowLayout(sender=None, appData=None):
     )
     dpg.configure_item(
         "clearPreviewsButton",
-        width=layoutMetrics["sliderWidth"],
-        height=layoutMetrics["buttonHeight"],
-    )
-    dpg.configure_item(
-        "openExamplesButton",
         width=layoutMetrics["sliderWidth"],
         height=layoutMetrics["buttonHeight"],
     )
@@ -717,11 +693,6 @@ if __name__ == "__main__":
                         callback=clearPreviews,
                         enabled=False,
                     )
-                    dpg.add_button(
-                        label="Open examples folder",
-                        tag="openExamplesButton",
-                        callback=openExamplesFolder,
-                    )
                 dpg.add_spacer(tag="headerRightSpacer")
 
             dpg.add_spacer(height=12)
@@ -761,14 +732,29 @@ if __name__ == "__main__":
             autosize=True,
         ):
             dpg.add_text("The model weights are required before colorization can start.")
-            dpg.add_text(tag="modelMissingDialogMessage", default_value="", wrap=520)
-            dpg.add_text(tag="modelMissingDialogStatus", default_value="", wrap=520)
+            dpg.add_text(
+                tag="modelMissingDialogMessage",
+                default_value="",
+                wrap=MODEL_DIALOG_CONTENT_WIDTH,
+            )
+            dpg.add_text("Manual download URL")
+            dpg.add_input_text(
+                tag="modelManualDownloadUrl",
+                default_value=MODEL_MANUAL_DOWNLOAD_URL,
+                readonly=True,
+                width=MODEL_DIALOG_CONTENT_WIDTH,
+            )
+            dpg.add_text(
+                tag="modelMissingDialogStatus",
+                default_value="",
+                wrap=MODEL_DIALOG_CONTENT_WIDTH,
+            )
             dpg.add_progress_bar(
                 tag="modelMissingDialogProgress",
                 default_value=0.0,
                 overlay="0%",
                 show=False,
-                width=520,
+                width=MODEL_DIALOG_CONTENT_WIDTH,
             )
             with dpg.group(horizontal=True):
                 dpg.add_button(
@@ -777,9 +763,9 @@ if __name__ == "__main__":
                     callback=startModelDownload,
                 )
                 dpg.add_button(
-                    label="Open download page",
-                    tag="openModelDownloadPageButton",
-                    callback=openModelDownloadPage,
+                    label="Copy download link",
+                    tag="copyModelDownloadLinkButton",
+                    callback=copyModelDownloadLink,
                 )
                 dpg.add_button(
                     label="Close",
@@ -801,7 +787,8 @@ if __name__ == "__main__":
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.set_primary_window("mainWindow", True)
-        dpg.maximize_viewport()
+        if not isFrozenLinuxApp():
+            dpg.maximize_viewport()
         applyUIScale(uiScaleValue)
         syncMainWindowLayout()
         if not hasModelAssets():

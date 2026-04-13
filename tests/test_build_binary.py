@@ -13,6 +13,14 @@ class BuildBinaryTests(unittest.TestCase):
 
         self.assertEqual(exitCode, 1)
 
+    def testMainRejectsMacOSPackagedBuilds(self):
+        with mock.patch.object(build_binary.sys, "platform", "darwin"):
+            with mock.patch("sys.stderr"):
+                with mock.patch("sys.argv", ["build_binary.py"]):
+                    exitCode = build_binary.main()
+
+        self.assertEqual(exitCode, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

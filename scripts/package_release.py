@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import os
-import subprocess
-import sys
 import tarfile
 import zipfile
 
@@ -33,22 +31,6 @@ def createZipArchive(sourceDir, outputPath):
                 archiveFile.write(absolutePath, relativePath)
 
 
-def createMacOSAppZipArchive(sourceDir, outputPath):
-    completedProcess = subprocess.run(
-        [
-            "ditto",
-            "-c",
-            "-k",
-            "--keepParent",
-            sourceDir,
-            outputPath,
-        ],
-        check=False,
-    )
-    if completedProcess.returncode != 0:
-        raise RuntimeError("ditto failed while archiving macOS app bundle.")
-
-
 def createTarGzArchive(sourceDir, outputPath):
     with tarfile.open(outputPath, "w:gz") as archiveFile:
         archiveFile.add(sourceDir, arcname=os.path.basename(sourceDir))
@@ -68,10 +50,7 @@ def main():
         os.remove(outputPath)
 
     if outputPath.endswith(".zip"):
-        if sys.platform == "darwin" and sourceDir.endswith(".app"):
-            createMacOSAppZipArchive(sourceDir, outputPath)
-        else:
-            createZipArchive(sourceDir, outputPath)
+        createZipArchive(sourceDir, outputPath)
     elif outputPath.endswith(".tar.gz"):
         createTarGzArchive(sourceDir, outputPath)
     else:

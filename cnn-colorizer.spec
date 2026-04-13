@@ -1,13 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
-import sys
 
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules
 
 
 projectRoot = os.path.abspath(".")
 modelDir = os.path.join(projectRoot, "model")
-isMacOS = sys.platform == "darwin"
 bundledModelFiles = [
     "colorization_deploy_v2.prototxt",
     "pts_in_hull.npy",
@@ -76,17 +74,3 @@ coll = COLLECT(
     upx_exclude=[],
     name="cnn-colorizer",
 )
-
-if isMacOS:
-    app = BUNDLE(
-        coll,
-        name="cnn-colorizer.app",
-        icon=None,
-        bundle_identifier="com.redzep.cnn-colorizer",
-        version="1.0.0",
-        info_plist={
-            "NSPrincipalClass": "NSApplication",
-            "CFBundleDisplayName": "cnn-colorizer",
-            "CFBundleName": "cnn-colorizer",
-        },
-    )

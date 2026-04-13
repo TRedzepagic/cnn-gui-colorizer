@@ -34,6 +34,10 @@ class MainLayoutTests(unittest.TestCase):
         self.assertGreaterEqual(metrics["logSectionHeight"], 180)
         self.assertGreaterEqual(metrics["comparisonHeight"], 300)
 
+    def testGetAutoUIScaleUsesConservativeScaleForFrozenLinuxBundle(self):
+        with mock.patch("main.isFrozenLinuxApp", return_value=True):
+            self.assertEqual(main.getAutoUIScale(3840, 2160), 1.0)
+
     def testHandleUIScaleChangeDefersLayoutMutation(self):
         with mock.patch("main.applyUIScale") as applyUIScaleMock:
             with mock.patch("main.syncMainWindowLayout") as syncLayoutMock:
@@ -226,15 +230,15 @@ class MainLayoutTests(unittest.TestCase):
         syncDialogMock.assert_called_once_with()
         self.assertTrue(main.modelDownloadInProgress)
 
-    def testOpenModelDownloadPageUsesExternalUrlHelper(self):
-        with mock.patch("main.openExternalUrl", return_value=True) as openExternalUrlMock:
+    def testCopyModelDownloadLinkUsesClipboard(self):
+        with mock.patch("main.dpg.set_clipboard_text") as setClipboardTextMock:
             with mock.patch("main.syncModelDialogState") as syncDialogMock:
-                main.openModelDownloadPage()
+                main.copyModelDownloadLink()
 
-        openExternalUrlMock.assert_called_once_with(main.MODEL_MANUAL_DOWNLOAD_URL)
+        setClipboardTextMock.assert_called_once_with(main.MODEL_MANUAL_DOWNLOAD_URL)
         self.assertEqual(
             main.modelDownloadStatusMessage,
-            "Opened the model download page in the default browser.",
+            "Copied the model download link to the clipboard.",
         )
         syncDialogMock.assert_called_once_with()
 
@@ -290,28 +294,6 @@ class MainLayoutTests(unittest.TestCase):
 
         configureItemMock.assert_not_called()
         showItemMock.assert_called_once_with("file_dialog_tag")
-
-    def testOpenExamplesFolderUsesExternalPathHelper(self):
-        main.logger = mock.Mock()
-
-        with mock.patch("main.getExamplesDirectory", return_value="/tmp/examples"):
-            with mock.patch("main.openExternalPath", return_value=True) as openExternalPathMock:
-                main.openExamplesFolder()
-
-        openExternalPathMock.assert_called_once_with("/tmp/examples")
-        main.logger.logMsg.assert_called_once_with("Main", "Opened examples folder.", "INFO")
-
-    def testOpenExamplesFolderLogsWarningWhenExamplesMissing(self):
-        main.logger = mock.Mock()
-
-        with mock.patch("main.getExamplesDirectory", return_value=None):
-            main.openExamplesFolder()
-
-        main.logger.logMsg.assert_called_once_with(
-            "Main",
-            "Examples folder not found.",
-            "WARNING",
-        )
 
     def testGetExamplesDirectoryUsesBundledExamplesPath(self):
         with mock.patch("main.resolveResourcePath", return_value="/tmp/examples"):

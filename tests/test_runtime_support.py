@@ -6,6 +6,15 @@ import runtime_support
 
 
 class RuntimeSupportTests(unittest.TestCase):
+    def testIsFrozenLinuxAppReturnsTrueOnlyForFrozenLinux(self):
+        with mock.patch.object(runtime_support.sys, "frozen", True, create=True):
+            with mock.patch.object(runtime_support.sys, "platform", "linux"):
+                self.assertTrue(runtime_support.isFrozenLinuxApp())
+
+        with mock.patch.object(runtime_support.sys, "frozen", False, create=True):
+            with mock.patch.object(runtime_support.sys, "platform", "linux"):
+                self.assertFalse(runtime_support.isFrozenLinuxApp())
+
     def testResolveResourcePathUsesPyInstallerBaseWhenFrozen(self):
         with mock.patch.object(runtime_support.sys, "frozen", True, create=True):
             with mock.patch.object(runtime_support.sys, "_MEIPASS", "/tmp/colorizer-app", create=True):
