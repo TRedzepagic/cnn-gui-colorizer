@@ -27,9 +27,9 @@ from work_object import ColorizationWorkObject
 
 DEFAULT_VIEWPORT_WIDTH = 1280
 DEFAULT_VIEWPORT_HEIGHT = 720
-MODEL_DIALOG_WINDOW_WIDTH = 980
-MODEL_DIALOG_WINDOW_HEIGHT = 260
-MODEL_DIALOG_CONTENT_WIDTH = 920
+MODEL_DIALOG_MIN_WIDTH = 980
+MODEL_DIALOG_MIN_HEIGHT = 260
+MODEL_DIALOG_PADDING_WIDTH = 60
 VIEWPORT_RESIZE_SETTLE_DELAY = 0.15
 MIN_UI_SCALE = 0.75
 MAX_UI_SCALE = 3.0
@@ -53,6 +53,7 @@ modelDownloadInProgress = False
 modelDownloadStatusMessage = ""
 modelDownloadProgressValue = 0.0
 modelDownloadProgressOverlay = "0%"
+lastModelDialogSize = None
 
 
 def formatStartupError(prefix, error):
@@ -135,6 +136,26 @@ def updateModelDownloadProgressState(progressValue=0.0, overlay="0%"):
     modelDownloadProgressOverlay = overlay
 
 
+def getDesiredModelDialogSize():
+    viewportWidth = max(dpg.get_viewport_client_width(), MODEL_DIALOG_MIN_WIDTH)
+    viewportHeight = max(dpg.get_viewport_client_height(), MODEL_DIALOG_MIN_HEIGHT)
+    scale = max(uiScaleValue, 1.0)
+
+    width = min(
+        max(int(MODEL_DIALOG_MIN_WIDTH * scale), MODEL_DIALOG_MIN_WIDTH),
+        max(viewportWidth - 48, MODEL_DIALOG_MIN_WIDTH),
+    )
+    height = min(
+        max(int(MODEL_DIALOG_MIN_HEIGHT * scale), MODEL_DIALOG_MIN_HEIGHT),
+        max(viewportHeight - 48, MODEL_DIALOG_MIN_HEIGHT),
+    )
+    return width, height
+
+
+def getModelDialogContentWidth(dialogWidth):
+    return max(int(dialogWidth) - MODEL_DIALOG_PADDING_WIDTH, 320)
+
+
 def getExamplesDirectory():
     examplesDirectory = resolveResourcePath("examples")
     if os.path.isdir(examplesDirectory):
@@ -162,6 +183,7 @@ def syncModelDialogState():
     if not dpg.does_item_exist("modelMissingDialog"):
         return
 
+    syncModelDialogLayout()
     dpg.set_value("modelMissingDialogMessage", getModelMissingMessage())
 
     statusMessage = modelDownloadStatusMessage
@@ -188,7 +210,7 @@ def showModelMissingDialog(statusMessage=None):
 
     syncModelDialogState()
     if dpg.does_item_exist("modelMissingDialog"):
-        centerModelMissingDialog()
+        syncModelDialogLayout(forceWindowSize=True, center=True)
         dpg.show_item("modelMissingDialog")
 
 
@@ -554,15 +576,64 @@ def syncPreviewControlState():
     )
 
 
-def centerModelMissingDialog():
+def centerModelMissingDialog(dialogWidth=None, dialogHeight=None):
     if not dpg.does_item_exist("modelMissingDialog"):
         return
 
-    viewportWidth = max(dpg.get_viewport_client_width(), MODEL_DIALOG_WINDOW_WIDTH)
-    viewportHeight = max(dpg.get_viewport_client_height(), MODEL_DIALOG_WINDOW_HEIGHT)
-    dialogX = max(int((viewportWidth - MODEL_DIALOG_WINDOW_WIDTH) / 2), 0)
-    dialogY = max(int((viewportHeight - MODEL_DIALOG_WINDOW_HEIGHT) / 2), 0)
+    if dialogWidth is None or dialogHeight is None:
+        dialogWidth, dialogHeight = dpg.get_item_rect_size("modelMissingDialog")
+    if dialogWidth <= 0 or dialogHeight <= 0:
+        dialogWidth, dialogHeight = getDesiredModelDialogSize()
+
+    viewportWidth = max(dpg.get_viewport_client_width(), int(dialogWidth))
+    viewportHeight = max(dpg.get_viewport_client_height(), int(dialogHeight))
+    dialogX = max(int((viewportWidth - int(dialogWidth)) / 2), 0)
+    dialogY = max(int((viewportHeight - int(dialogHeight)) / 2), 0)
     dpg.set_item_pos("modelMissingDialog", [dialogX, dialogY])
+
+
+def syncModelDialogLayout(forceWindowSize=False, center=False):
+    if not dpg.does_item_exist("modelMissingDialog"):
+        return
+
+    if forceWindowSize:
+        dialogWidth, dialogHeight = getDesiredModelDialogSize()
+        dpg.configure_item(
+            "modelMissingDialog",
+            width=dialogWidth,
+            height=dialogHeight,
+        )
+    else:
+        dialogWidth, dialogHeight = dpg.get_item_rect_size("modelMissingDialog")
+        if dialogWidth <= 0 or dialogHeight <= 0:
+            dialogWidth, dialogHeight = getDesiredModelDialogSize()
+
+    contentWidth = getModelDialogContentWidth(dialogWidth)
+    dpg.configure_item("modelMissingDialogMessage", wrap=contentWidth)
+    dpg.configure_item("modelManualDownloadUrl", width=contentWidth)
+    dpg.configure_item("modelMissingDialogStatus", wrap=contentWidth)
+    dpg.configure_item("modelMissingDialogProgress", width=contentWidth)
+
+    if center:
+        centerModelMissingDialog(dialogWidth, dialogHeight)
+
+
+def processModelDialogResize():
+    global lastModelDialogSize
+
+    if not dpg.does_item_exist("modelMissingDialog"):
+        return
+
+    dialogWidth, dialogHeight = dpg.get_item_rect_size("modelMissingDialog")
+    if dialogWidth <= 0 or dialogHeight <= 0:
+        return
+
+    currentSize = (int(dialogWidth), int(dialogHeight))
+    if currentSize == lastModelDialogSize:
+        return
+
+    lastModelDialogSize = currentSize
+    syncModelDialogLayout()
 
 
 def calculateLayoutMetrics(viewportWidth, viewportHeight, uiScaleValue):
@@ -654,8 +725,6 @@ def syncMainWindowLayout(sender=None, appData=None):
         )
     if logger is not None:
         logger.syncLayout(layoutMetrics["contentWidth"], layoutMetrics["logSectionHeight"])
-
-    centerModelMissingDialog()
 
 
 if __name__ == "__main__":
@@ -761,38 +830,38 @@ if __name__ == "__main__":
             tag="modelMissingDialog",
             modal=True,
             show=False,
-            no_resize=True,
+            no_resize=False,
             no_move=False,
             no_collapse=True,
             no_close=True,
             autosize=False,
-            width=MODEL_DIALOG_WINDOW_WIDTH,
-            height=MODEL_DIALOG_WINDOW_HEIGHT,
+            width=MODEL_DIALOG_MIN_WIDTH,
+            height=MODEL_DIALOG_MIN_HEIGHT,
         ):
             dpg.add_text("The model weights are required before colorization can start.")
             dpg.add_text(
                 tag="modelMissingDialogMessage",
                 default_value="",
-                wrap=MODEL_DIALOG_CONTENT_WIDTH,
+                wrap=getModelDialogContentWidth(MODEL_DIALOG_MIN_WIDTH),
             )
             dpg.add_text("Manual download URL")
             dpg.add_input_text(
                 tag="modelManualDownloadUrl",
                 default_value=MODEL_MANUAL_DOWNLOAD_URL,
                 readonly=True,
-                width=MODEL_DIALOG_CONTENT_WIDTH,
+                width=getModelDialogContentWidth(MODEL_DIALOG_MIN_WIDTH),
             )
             dpg.add_text(
                 tag="modelMissingDialogStatus",
                 default_value="",
-                wrap=MODEL_DIALOG_CONTENT_WIDTH,
+                wrap=getModelDialogContentWidth(MODEL_DIALOG_MIN_WIDTH),
             )
             dpg.add_progress_bar(
                 tag="modelMissingDialogProgress",
                 default_value=0.0,
                 overlay="0%",
                 show=False,
-                width=MODEL_DIALOG_CONTENT_WIDTH,
+                width=getModelDialogContentWidth(MODEL_DIALOG_MIN_WIDTH),
             )
             with dpg.group(horizontal=True):
                 dpg.add_button(
@@ -852,6 +921,7 @@ if __name__ == "__main__":
             drainDisplayUpdates()
             processModelDownloadEvents()
             processPendingPreviewClear()
+            processModelDialogResize()
             mediaDisplayHelper.update()
             syncPreviewControlState()
 

@@ -12,6 +12,7 @@ class MainLayoutTests(unittest.TestCase):
         main.uiScaleValue = 1.0
         main.pendingUIScaleValue = None
         main.lastViewportResizeAt = 0.0
+        main.lastModelDialogSize = None
         main.layoutSyncPending = False
         main.previewClearPending = False
         main.modelDownloadQueue = None
@@ -38,6 +39,12 @@ class MainLayoutTests(unittest.TestCase):
     def testGetAutoUIScaleUsesConservativeScaleForFrozenLinuxBundle(self):
         with mock.patch("main.isFrozenLinuxApp", return_value=True):
             self.assertEqual(main.getAutoUIScale(3840, 2160), 1.0)
+
+    def testGetModelDialogContentWidthLeavesPadding(self):
+        self.assertEqual(
+            main.getModelDialogContentWidth(main.MODEL_DIALOG_MIN_WIDTH),
+            main.MODEL_DIALOG_MIN_WIDTH - main.MODEL_DIALOG_PADDING_WIDTH,
+        )
 
     def testHandleUIScaleChangeDefersLayoutMutation(self):
         with mock.patch("main.applyUIScale") as applyUIScaleMock:
@@ -88,18 +95,71 @@ class MainLayoutTests(unittest.TestCase):
 
     def testCenterModelMissingDialogUsesViewportCenter(self):
         with mock.patch("main.dpg.does_item_exist", return_value=True):
-            with mock.patch("main.dpg.get_viewport_client_width", return_value=1400):
-                with mock.patch("main.dpg.get_viewport_client_height", return_value=900):
-                    with mock.patch("main.dpg.set_item_pos") as setItemPosMock:
-                        main.centerModelMissingDialog()
+            with mock.patch("main.dpg.get_item_rect_size", return_value=(980, 260)):
+                with mock.patch("main.dpg.get_viewport_client_width", return_value=1400):
+                    with mock.patch("main.dpg.get_viewport_client_height", return_value=900):
+                        with mock.patch("main.dpg.set_item_pos") as setItemPosMock:
+                            main.centerModelMissingDialog()
 
         setItemPosMock.assert_called_once_with(
             "modelMissingDialog",
             [
-                int((1400 - main.MODEL_DIALOG_WINDOW_WIDTH) / 2),
-                int((900 - main.MODEL_DIALOG_WINDOW_HEIGHT) / 2),
+                int((1400 - 980) / 2),
+                int((900 - 260) / 2),
             ],
         )
+
+    def testSyncModelDialogLayoutUsesCurrentDialogWidth(self):
+        with mock.patch("main.dpg.does_item_exist", return_value=True):
+            with mock.patch("main.dpg.get_item_rect_size", return_value=(1100, 320)):
+                with mock.patch("main.dpg.configure_item") as configureItemMock:
+                    main.syncModelDialogLayout()
+
+        configureItemMock.assert_any_call(
+            "modelMissingDialogMessage",
+            wrap=main.getModelDialogContentWidth(1100),
+        )
+        configureItemMock.assert_any_call(
+            "modelManualDownloadUrl",
+            width=main.getModelDialogContentWidth(1100),
+        )
+        configureItemMock.assert_any_call(
+            "modelMissingDialogStatus",
+            wrap=main.getModelDialogContentWidth(1100),
+        )
+        configureItemMock.assert_any_call(
+            "modelMissingDialogProgress",
+            width=main.getModelDialogContentWidth(1100),
+        )
+
+    def testProcessModelDialogResizeSyncsOnlyOnSizeChange(self):
+        main.lastModelDialogSize = (1100, 320)
+
+        with mock.patch("main.dpg.does_item_exist", return_value=True):
+            with mock.patch("main.dpg.get_item_rect_size", return_value=(1100, 320)):
+                with mock.patch("main.syncModelDialogLayout") as syncModelDialogLayoutMock:
+                    main.processModelDialogResize()
+
+        syncModelDialogLayoutMock.assert_not_called()
+
+        with mock.patch("main.dpg.does_item_exist", return_value=True):
+            with mock.patch("main.dpg.get_item_rect_size", return_value=(1200, 340)):
+                with mock.patch("main.syncModelDialogLayout") as syncModelDialogLayoutMock:
+                    main.processModelDialogResize()
+
+        syncModelDialogLayoutMock.assert_called_once_with()
+        self.assertEqual(main.lastModelDialogSize, (1200, 340))
+
+    def testShowModelMissingDialogCentersAndSizesWindowBeforeShowing(self):
+        with mock.patch("main.syncModelDialogState") as syncModelDialogStateMock:
+            with mock.patch("main.dpg.does_item_exist", return_value=True):
+                with mock.patch("main.syncModelDialogLayout") as syncModelDialogLayoutMock:
+                    with mock.patch("main.dpg.show_item") as showItemMock:
+                        main.showModelMissingDialog()
+
+        syncModelDialogStateMock.assert_called_once_with()
+        syncModelDialogLayoutMock.assert_called_once_with(forceWindowSize=True, center=True)
+        showItemMock.assert_called_once_with("modelMissingDialog")
 
     def testClearPreviewsDefersCleanupToMainLoop(self):
         with mock.patch("main.mediaDisplayHelper") as mediaDisplayHelperMock:
