@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import time
 
 import dearpygui.dearpygui as dpg
 
@@ -26,7 +27,10 @@ from work_object import ColorizationWorkObject
 
 DEFAULT_VIEWPORT_WIDTH = 1280
 DEFAULT_VIEWPORT_HEIGHT = 720
-MODEL_DIALOG_CONTENT_WIDTH = 840
+MODEL_DIALOG_WINDOW_WIDTH = 980
+MODEL_DIALOG_WINDOW_HEIGHT = 260
+MODEL_DIALOG_CONTENT_WIDTH = 920
+VIEWPORT_RESIZE_SETTLE_DELAY = 0.15
 MIN_UI_SCALE = 0.75
 MAX_UI_SCALE = 3.0
 CONTROL_COLUMN_RATIO = 0.33
@@ -40,6 +44,7 @@ mediaDisplayHelper = None
 uiScaleMode = "auto"
 uiScaleValue = 1.0
 lastViewportSize = None
+lastViewportResizeAt = 0.0
 pendingUIScaleValue = None
 layoutSyncPending = False
 previewClearPending = False
@@ -93,6 +98,21 @@ def requestLayoutSync():
 def requestPreviewClear():
     global previewClearPending
     previewClearPending = True
+
+
+def markViewportResize():
+    global lastViewportResizeAt
+    lastViewportResizeAt = time.monotonic()
+
+
+def isViewportResizeSettling(now=None):
+    if lastViewportResizeAt <= 0:
+        return False
+
+    if now is None:
+        now = time.monotonic()
+
+    return (now - lastViewportResizeAt) < VIEWPORT_RESIZE_SETTLE_DELAY
 
 
 def formatByteCount(byteCount):
@@ -168,6 +188,7 @@ def showModelMissingDialog(statusMessage=None):
 
     syncModelDialogState()
     if dpg.does_item_exist("modelMissingDialog"):
+        centerModelMissingDialog()
         dpg.show_item("modelMissingDialog")
 
 
@@ -371,6 +392,9 @@ def clearPreviews():
 def processPendingLayout():
     global layoutSyncPending, pendingUIScaleValue, uiScaleValue
 
+    if layoutSyncPending and isViewportResizeSettling():
+        return
+
     if pendingUIScaleValue is not None:
         uiScaleValue = applyUIScale(pendingUIScaleValue, updateSlider=False)
         pendingUIScaleValue = None
@@ -530,6 +554,17 @@ def syncPreviewControlState():
     )
 
 
+def centerModelMissingDialog():
+    if not dpg.does_item_exist("modelMissingDialog"):
+        return
+
+    viewportWidth = max(dpg.get_viewport_client_width(), MODEL_DIALOG_WINDOW_WIDTH)
+    viewportHeight = max(dpg.get_viewport_client_height(), MODEL_DIALOG_WINDOW_HEIGHT)
+    dialogX = max(int((viewportWidth - MODEL_DIALOG_WINDOW_WIDTH) / 2), 0)
+    dialogY = max(int((viewportHeight - MODEL_DIALOG_WINDOW_HEIGHT) / 2), 0)
+    dpg.set_item_pos("modelMissingDialog", [dialogX, dialogY])
+
+
 def calculateLayoutMetrics(viewportWidth, viewportHeight, uiScaleValue):
     pageMargin = max(int(24 * uiScaleValue), 16)
     controlColumnWidth = min(
@@ -576,7 +611,6 @@ def syncMainWindowLayout(sender=None, appData=None):
 
     layoutMetrics = calculateLayoutMetrics(viewportWidth, viewportHeight, uiScaleValue)
 
-    dpg.configure_item("mainWindow", width=viewportWidth, height=viewportHeight)
     dpg.configure_item("headerLeftSpacer", width=layoutMetrics["controlSideWidth"])
     dpg.configure_item("headerRightSpacer", width=layoutMetrics["controlSideWidth"])
     dpg.configure_item(
@@ -620,6 +654,8 @@ def syncMainWindowLayout(sender=None, appData=None):
         )
     if logger is not None:
         logger.syncLayout(layoutMetrics["contentWidth"], layoutMetrics["logSectionHeight"])
+
+    centerModelMissingDialog()
 
 
 if __name__ == "__main__":
@@ -729,7 +765,9 @@ if __name__ == "__main__":
             no_move=False,
             no_collapse=True,
             no_close=True,
-            autosize=True,
+            autosize=False,
+            width=MODEL_DIALOG_WINDOW_WIDTH,
+            height=MODEL_DIALOG_WINDOW_HEIGHT,
         ):
             dpg.add_text("The model weights are required before colorization can start.")
             dpg.add_text(
@@ -805,6 +843,7 @@ if __name__ == "__main__":
                 dpg.get_viewport_client_height(),
             )
             if currentViewportSize != lastViewportSize:
+                markViewportResize()
                 requestLayoutSync()
                 lastViewportSize = currentViewportSize
 

@@ -11,6 +11,7 @@ class MainLayoutTests(unittest.TestCase):
         main.uiScaleMode = "auto"
         main.uiScaleValue = 1.0
         main.pendingUIScaleValue = None
+        main.lastViewportResizeAt = 0.0
         main.layoutSyncPending = False
         main.previewClearPending = False
         main.modelDownloadQueue = None
@@ -73,6 +74,32 @@ class MainLayoutTests(unittest.TestCase):
         self.assertEqual(main.uiScaleValue, 2.1)
         self.assertIsNone(main.pendingUIScaleValue)
         self.assertFalse(main.layoutSyncPending)
+
+    def testProcessPendingLayoutWaitsForViewportResizeToSettle(self):
+        main.layoutSyncPending = True
+        main.lastViewportResizeAt = 10.0
+
+        with mock.patch("main.time.monotonic", return_value=10.05):
+            with mock.patch("main.syncMainWindowLayout") as syncLayoutMock:
+                main.processPendingLayout()
+
+        syncLayoutMock.assert_not_called()
+        self.assertTrue(main.layoutSyncPending)
+
+    def testCenterModelMissingDialogUsesViewportCenter(self):
+        with mock.patch("main.dpg.does_item_exist", return_value=True):
+            with mock.patch("main.dpg.get_viewport_client_width", return_value=1400):
+                with mock.patch("main.dpg.get_viewport_client_height", return_value=900):
+                    with mock.patch("main.dpg.set_item_pos") as setItemPosMock:
+                        main.centerModelMissingDialog()
+
+        setItemPosMock.assert_called_once_with(
+            "modelMissingDialog",
+            [
+                int((1400 - main.MODEL_DIALOG_WINDOW_WIDTH) / 2),
+                int((900 - main.MODEL_DIALOG_WINDOW_HEIGHT) / 2),
+            ],
+        )
 
     def testClearPreviewsDefersCleanupToMainLoop(self):
         with mock.patch("main.mediaDisplayHelper") as mediaDisplayHelperMock:
