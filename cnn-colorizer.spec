@@ -12,19 +12,31 @@ bundledModelFiles = [
     "colorization_deploy_v2.prototxt",
     "pts_in_hull.npy",
 ]
+bundledExampleDirectories = {
+    "bwImages": os.path.join("examples", "bwImages"),
+    "bwVideos": os.path.join("examples", "bwVideos"),
+}
 
 datas = collect_data_files("dearpygui")
 datas += collect_data_files("dearpygui_ext")
+datas += collect_data_files("gdown")
+datas += collect_data_files("setproctitle")
 if os.path.isdir(modelDir):
     for modelFileName in bundledModelFiles:
         modelFilePath = os.path.join(modelDir, modelFileName)
         if os.path.exists(modelFilePath):
             datas.append((modelFilePath, "model"))
+for sourceDirectoryName, packagedDirectory in bundledExampleDirectories.items():
+    sourceDirectoryPath = os.path.join(projectRoot, sourceDirectoryName)
+    if os.path.isdir(sourceDirectoryPath):
+        datas.append((sourceDirectoryPath, packagedDirectory))
 
 binaries = collect_dynamic_libs("dearpygui")
 binaries += collect_dynamic_libs("cv2")
 
 hiddenimports = collect_submodules("dearpygui_ext")
+hiddenimports += collect_submodules("gdown")
+hiddenimports += collect_submodules("setproctitle")
 
 
 a = Analysis(

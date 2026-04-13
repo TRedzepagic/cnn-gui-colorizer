@@ -67,6 +67,8 @@ python3 scripts/build_binary.py --clean
 
 The output is written to `dist/cnn-colorizer/`. The packaged app includes the lightweight model metadata files and downloads the `colorization_release_v2.caffemodel` on demand through the in-app model dialog.
 
+The packaged app also includes the sample images and videos from this repository under `examples/bwImages` and `examples/bwVideos`.
+
 For Windows and macOS, build on the target OS. The PyInstaller spec in this repository is intended for Linux, Windows, and macOS native builds, but final binaries should still be produced and smoke-tested on each platform separately.
 
 The macOS build also emits `dist/cnn-colorizer.app`.
