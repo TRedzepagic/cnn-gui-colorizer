@@ -19,8 +19,11 @@ class Colorizer(Thread):
 
         self.imgLock = Lock()
         self.videoLock = Lock()
-       
-        self._colorizedVideoFramesPath = "./colorizedFrames"
+
+        self._outputsRootPath = "./outputs"
+        self._colorizedVideoFramesPath = os.path.join(self._outputsRootPath, "colorizedFrames")
+        self._colorizedImageOutputPath = os.path.join(self._outputsRootPath, "colorizedImages")
+        self._colorizedVideoOutputPath = os.path.join(self._outputsRootPath, "colorizedVideos")
 
         self.logger = logger
         self.displayQueue = displayQueue
@@ -32,9 +35,10 @@ class Colorizer(Thread):
 
     def _setupOutputFolders(self):
         outputFolders = [
-            "./colorizedFrames",
-            "./colorizedImages",
-            "./colorizedVideos"
+            self._outputsRootPath,
+            self._colorizedVideoFramesPath,
+            self._colorizedImageOutputPath,
+            self._colorizedVideoOutputPath,
         ]
         for outputFolder in outputFolders:
             if not os.path.exists(outputFolder):
@@ -43,16 +47,42 @@ class Colorizer(Thread):
     def getColorizedVideoFramesPath(self):
         return self._colorizedVideoFramesPath
 
+    def _getRelativeDirectoryFromAnchors(self, pathIn, anchors):
+        normalizedPath = os.path.normpath(pathIn).replace("\\", "/").strip("/")
+        for anchor in anchors:
+            normalizedAnchor = os.path.normpath(anchor).replace("\\", "/").strip("/")
+            if normalizedPath == normalizedAnchor:
+                return ""
+
+            anchorMarker = normalizedAnchor + "/"
+            anchorIndex = normalizedPath.find(anchorMarker)
+            if anchorIndex >= 0:
+                return normalizedPath[anchorIndex + len(anchorMarker):]
+
+        return None
+
     def createSavePath(self, pathIn, savePathType="IMG"):
         fileName, extension = os.path.splitext(os.path.basename(pathIn))
+
+        inputDirectory = os.path.dirname(pathIn)
+        relativeDirectory = None
         if savePathType == "IMG":
-            outputDirectory = os.path.dirname(pathIn).replace("bwImages", "colorizedImages")
-            if outputDirectory == os.path.dirname(pathIn):
-                outputDirectory = "./colorizedImages"
-        if savePathType == "VID":
-            outputDirectory = os.path.dirname(pathIn).replace("bwVideos", "colorizedVideos")
-            if outputDirectory == os.path.dirname(pathIn):
-                outputDirectory = "./colorizedVideos"
+            outputDirectory = self._colorizedImageOutputPath
+            relativeDirectory = self._getRelativeDirectoryFromAnchors(
+                inputDirectory,
+                ["examples/bwImages", "bwImages"],
+            )
+        elif savePathType == "VID":
+            outputDirectory = self._colorizedVideoOutputPath
+            relativeDirectory = self._getRelativeDirectoryFromAnchors(
+                inputDirectory,
+                ["examples/bwVideos", "bwVideos"],
+            )
+        else:
+            raise ValueError("Unsupported save path type: {0}".format(savePathType))
+
+        if relativeDirectory:
+            outputDirectory = os.path.join(outputDirectory, relativeDirectory)
 
         os.makedirs(outputDirectory, exist_ok=True)
         savePath = os.path.join(outputDirectory, fileName + "_colorized" + extension)
@@ -146,14 +176,17 @@ class Colorizer(Thread):
 
                     colorizedFrame = NNet.colorize(frame)
 
-                    cv2.imwrite("./colorizedFrames/{0}.jpg".format(str(count)), colorizedFrame)
+                    cv2.imwrite(
+                        os.path.join(self.getColorizedVideoFramesPath(), "{0}.jpg".format(str(count))),
+                        colorizedFrame,
+                    )
                     count += 1
                     if frameCount > 0:
                         self.videoColorizationProgress = min(count / frameCount, 1)
 
                 if not self.videoColorizationCanceled.is_set() and not self.terminated.is_set():
                     savePath = self.createSavePath(path, savePathType="VID")
-                    self._convertFramesToVideo("./colorizedFrames/", savePath, vidFPS)
+                    self._convertFramesToVideo(self.getColorizedVideoFramesPath(), savePath, vidFPS)
                     self.signalGUIToDisplayItem(savePath, "VIDEO")
                 else:
                     msg = "Video Colorization canceled."

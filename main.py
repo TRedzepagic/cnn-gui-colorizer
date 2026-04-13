@@ -16,7 +16,13 @@ from model_utils import (
     getModelDirectory,
     hasModelAssets,
 )
-from runtime_support import APP_WINDOW_TITLE, configureProcessIdentity, openExternalUrl
+from runtime_support import (
+    APP_WINDOW_TITLE,
+    configureProcessIdentity,
+    openExternalPath,
+    openExternalUrl,
+    resolveResourcePath,
+)
 from work_object import ColorizationWorkObject
 
 DEFAULT_VIEWPORT_WIDTH = 1280
@@ -104,6 +110,18 @@ def updateModelDownloadProgressState(progressValue=0.0, overlay="0%"):
     global modelDownloadProgressValue, modelDownloadProgressOverlay
     modelDownloadProgressValue = max(0.0, min(progressValue, 1.0))
     modelDownloadProgressOverlay = overlay
+
+
+def getExamplesDirectory():
+    examplesDirectory = resolveResourcePath("examples")
+    if os.path.isdir(examplesDirectory):
+        return examplesDirectory
+
+    exampleImagesDirectory = resolveResourcePath("examples", "bwImages")
+    if os.path.isdir(exampleImagesDirectory):
+        return os.path.dirname(exampleImagesDirectory)
+
+    return None
 
 
 def getModelMissingMessage():
@@ -194,7 +212,30 @@ def handlePrimaryAction():
     if not ensureModelAvailable():
         return
 
+    examplesDirectory = getExamplesDirectory()
+    if examplesDirectory is not None:
+        dpg.configure_item("file_dialog_tag", default_path=examplesDirectory)
     dpg.show_item("file_dialog_tag")
+
+
+def openExamplesFolder():
+    examplesDirectory = getExamplesDirectory()
+    if examplesDirectory is None:
+        if logger is not None:
+            logger.logMsg("Main", "Examples folder not found.", "WARNING")
+        return
+
+    if openExternalPath(examplesDirectory):
+        if logger is not None:
+            logger.logMsg("Main", "Opened examples folder.", "INFO")
+        return
+
+    if logger is not None:
+        logger.logMsg(
+            "Main",
+            "Unable to open examples folder: {0}".format(examplesDirectory),
+            "CRITICAL",
+        )
 
 
 def getGUIStartupError():
@@ -521,7 +562,7 @@ def calculateLayoutMetrics(viewportWidth, viewportHeight, uiScaleValue):
 
     buttonHeight = max(int(50 * uiScaleValue), 50)
     sliderWidth = controlColumnWidth
-    headerControlsHeight = max(int(240 * uiScaleValue), 210)
+    headerControlsHeight = max(int(300 * uiScaleValue), 260)
     headerGap = max(int(20 * uiScaleValue), 12)
     contentHeight = max(viewportHeight - headerControlsHeight - headerGap - pageMargin, 320)
     comparisonHeight = max(int(contentHeight * 0.52), 300)
@@ -586,6 +627,11 @@ def syncMainWindowLayout(sender=None, appData=None):
     )
     dpg.configure_item(
         "clearPreviewsButton",
+        width=layoutMetrics["sliderWidth"],
+        height=layoutMetrics["buttonHeight"],
+    )
+    dpg.configure_item(
+        "openExamplesButton",
         width=layoutMetrics["sliderWidth"],
         height=layoutMetrics["buttonHeight"],
     )
@@ -670,6 +716,11 @@ if __name__ == "__main__":
                         tag="clearPreviewsButton",
                         callback=clearPreviews,
                         enabled=False,
+                    )
+                    dpg.add_button(
+                        label="Open examples folder",
+                        tag="openExamplesButton",
+                        callback=openExamplesFolder,
                     )
                 dpg.add_spacer(tag="headerRightSpacer")
 

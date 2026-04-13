@@ -22,6 +22,8 @@ Manual model download: [Colorization Release v2 Caffemodel](https://drive.google
 
 The Caffe model is intentionally not tracked in git. The helper script downloads the missing weights into `./model` by default.
 
+Sample input media lives under `./examples`, and generated media is written under `./outputs`.
+
 If you want to keep the model somewhere else, point the app at it with `COLORIZER_MODEL_DIR`:
 
 ```bash
@@ -68,6 +70,8 @@ python3 scripts/build_binary.py --clean
 The output is written to `dist/cnn-colorizer/`. The packaged app includes the lightweight model metadata files and downloads the `colorization_release_v2.caffemodel` on demand through the in-app model dialog.
 
 The packaged app also includes the sample images and videos from this repository under `examples/bwImages` and `examples/bwVideos`.
+
+The app also exposes an `Open examples folder` button and points the file picker at the bundled examples when they are present.
 
 For Windows and macOS, build on the target OS. The PyInstaller spec in this repository is intended for Linux, Windows, and macOS native builds, but final binaries should still be produced and smoke-tested on each platform separately.
 

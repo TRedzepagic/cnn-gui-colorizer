@@ -261,16 +261,79 @@ class MainLayoutTests(unittest.TestCase):
         enqueueWorkObjectMock.assert_called_once_with("/tmp/example.mp4", "VIDEO")
         showItemMock.assert_not_called()
 
-    def testHandlePrimaryActionShowsPickerWhenResultPreviewAlreadyExists(self):
+    def testHandlePrimaryActionShowsPickerWhenResultPreviewAlreadyExistsAndExamplesExist(self):
         main.mediaDisplayHelper = mock.Mock()
         main.mediaDisplayHelper.hasSourcePreview.return_value = True
         main.mediaDisplayHelper.hasResultPreview.return_value = True
 
-        with mock.patch("main.enqueueWorkObject") as enqueueWorkObjectMock:
-            with mock.patch("main.dpg.show_item") as showItemMock:
-                main.handlePrimaryAction()
+        with mock.patch("main.ensureModelAvailable", return_value=True):
+            with mock.patch("main.enqueueWorkObject") as enqueueWorkObjectMock:
+                with mock.patch("main.getExamplesDirectory", return_value="/tmp/examples"):
+                    with mock.patch("main.dpg.configure_item") as configureItemMock:
+                        with mock.patch("main.dpg.show_item") as showItemMock:
+                            main.handlePrimaryAction()
 
         enqueueWorkObjectMock.assert_not_called()
+        configureItemMock.assert_called_once_with("file_dialog_tag", default_path="/tmp/examples")
+        showItemMock.assert_called_once_with("file_dialog_tag")
+
+    def testHandlePrimaryActionShowsPickerWithoutExamplesDirectory(self):
+        main.mediaDisplayHelper = mock.Mock()
+        main.mediaDisplayHelper.hasSourcePreview.return_value = False
+        main.mediaDisplayHelper.hasResultPreview.return_value = False
+
+        with mock.patch("main.ensureModelAvailable", return_value=True):
+            with mock.patch("main.getExamplesDirectory", return_value=None):
+                with mock.patch("main.dpg.configure_item") as configureItemMock:
+                    with mock.patch("main.dpg.show_item") as showItemMock:
+                        main.handlePrimaryAction()
+
+        configureItemMock.assert_not_called()
+        showItemMock.assert_called_once_with("file_dialog_tag")
+
+    def testOpenExamplesFolderUsesExternalPathHelper(self):
+        main.logger = mock.Mock()
+
+        with mock.patch("main.getExamplesDirectory", return_value="/tmp/examples"):
+            with mock.patch("main.openExternalPath", return_value=True) as openExternalPathMock:
+                main.openExamplesFolder()
+
+        openExternalPathMock.assert_called_once_with("/tmp/examples")
+        main.logger.logMsg.assert_called_once_with("Main", "Opened examples folder.", "INFO")
+
+    def testOpenExamplesFolderLogsWarningWhenExamplesMissing(self):
+        main.logger = mock.Mock()
+
+        with mock.patch("main.getExamplesDirectory", return_value=None):
+            main.openExamplesFolder()
+
+        main.logger.logMsg.assert_called_once_with(
+            "Main",
+            "Examples folder not found.",
+            "WARNING",
+        )
+
+    def testGetExamplesDirectoryUsesBundledExamplesPath(self):
+        with mock.patch("main.resolveResourcePath", return_value="/tmp/examples"):
+            with mock.patch("main.os.path.isdir", return_value=True):
+                examplesDirectory = main.getExamplesDirectory()
+
+        self.assertEqual(examplesDirectory, "/tmp/examples")
+
+    def testHandlePrimaryActionShowsPickerWhenResultPreviewAlreadyExistsWithoutExamples(self):
+        main.mediaDisplayHelper = mock.Mock()
+        main.mediaDisplayHelper.hasSourcePreview.return_value = True
+        main.mediaDisplayHelper.hasResultPreview.return_value = True
+
+        with mock.patch("main.ensureModelAvailable", return_value=True):
+            with mock.patch("main.enqueueWorkObject") as enqueueWorkObjectMock:
+                with mock.patch("main.getExamplesDirectory", return_value=None):
+                    with mock.patch("main.dpg.configure_item") as configureItemMock:
+                        with mock.patch("main.dpg.show_item") as showItemMock:
+                            main.handlePrimaryAction()
+
+        enqueueWorkObjectMock.assert_not_called()
+        configureItemMock.assert_not_called()
         showItemMock.assert_called_once_with("file_dialog_tag")
 
 

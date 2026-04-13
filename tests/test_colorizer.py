@@ -33,18 +33,18 @@ class ColorizerTests(unittest.TestCase):
         self.colorizer = Colorizer(DummyLogger(), queue.Queue(), queue.Queue())
 
     def testCreateSavePathPreservesFullExtensionSplit(self):
-        save_path = self.colorizer.createSavePath("./bwImages/folder.with.dots/sample.image.png")
+        save_path = self.colorizer.createSavePath("./examples/bwImages/folder.with.dots/sample.image.png")
         self.assertEqual(
             save_path,
-            "./colorizedImages/folder.with.dots/sample.image_colorized.png",
+            "./outputs/colorizedImages/folder.with.dots/sample.image_colorized.png",
         )
 
     def testCreateSavePathFallsBackToOutputDirectories(self):
         image_path = self.colorizer.createSavePath("/tmp/input/archive.photo.jpeg")
         video_path = self.colorizer.createSavePath("/tmp/input/archive.clip.mp4", savePathType="VID")
 
-        self.assertEqual(image_path, "./colorizedImages/archive.photo_colorized.jpeg")
-        self.assertEqual(video_path, "./colorizedVideos/archive.clip_colorized.mp4")
+        self.assertEqual(image_path, "./outputs/colorizedImages/archive.photo_colorized.jpeg")
+        self.assertEqual(video_path, "./outputs/colorizedVideos/archive.clip_colorized.mp4")
 
     def testConvertFramesToVideoStreamsFramesWithoutCollectingThem(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -73,7 +73,7 @@ class ColorizerTests(unittest.TestCase):
             with mock.patch("colorizer.cv2.imwrite", return_value=True):
                 with mock.patch("colorizer.NeuralNet", return_value=fakeNet):
                     with mock.patch("colorizer.trimProcessMemory") as trimProcessMemoryMock:
-                        self.colorizer.colorizeBWImage("bwImages/example.jpg")
+                        self.colorizer.colorizeBWImage("examples/bwImages/example.jpg")
 
         trimProcessMemoryMock.assert_called_once_with()
 

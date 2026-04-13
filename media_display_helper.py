@@ -87,7 +87,13 @@ def getDisplayedImageRect(textureWidth, textureHeight, paneMetrics):
 def inferPreviewSlot(path):
     normalizedPath = path.replace("\\", "/")
     fileName = os.path.basename(normalizedPath)
-    if "_colorized" in fileName or "/colorizedImages/" in normalizedPath or "/colorizedVideos/" in normalizedPath:
+    if (
+        "_colorized" in fileName
+        or "/outputs/colorizedImages/" in normalizedPath
+        or "/outputs/colorizedVideos/" in normalizedPath
+        or "/colorizedImages/" in normalizedPath
+        or "/colorizedVideos/" in normalizedPath
+    ):
         return "result"
     return "source"
 

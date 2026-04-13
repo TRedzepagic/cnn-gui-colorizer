@@ -1,5 +1,5 @@
 clean:
-	rm -rf ./colorizedFrames/ && rm -rf ./colorizedImages/ && rm -rf ./colorizedVideos
+	rm -rf ./outputs/
 
 clean-build:
 	rm -rf ./build/ && rm -rf ./dist/

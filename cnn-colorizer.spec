@@ -27,7 +27,7 @@ if os.path.isdir(modelDir):
         if os.path.exists(modelFilePath):
             datas.append((modelFilePath, "model"))
 for sourceDirectoryName, packagedDirectory in bundledExampleDirectories.items():
-    sourceDirectoryPath = os.path.join(projectRoot, sourceDirectoryName)
+    sourceDirectoryPath = os.path.join(projectRoot, "examples", sourceDirectoryName)
     if os.path.isdir(sourceDirectoryPath):
         datas.append((sourceDirectoryPath, packagedDirectory))
 
@@ -64,7 +64,6 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
-    contents_directory=".",
 )
 
 coll = COLLECT(

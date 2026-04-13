@@ -1,7 +1,5 @@
 model/colorization_release_v2.caffemodel
-colorizedFrames/
-colorizedVideos/
-colorizedImages/
+outputs/
 README.pdf
 __pycache__
 .vscode

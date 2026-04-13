@@ -49,9 +49,9 @@ class MediaDisplayHelperTests(unittest.TestCase):
         self.assertEqual(displayRect, {"width": 403, "height": 484, "x": 94, "y": 8})
 
     def testInferPreviewSlotDetectsColorizedOutputs(self):
-        self.assertEqual(inferPreviewSlot("./colorizedImages/example_colorized.png"), "result")
-        self.assertEqual(inferPreviewSlot("./colorizedVideos/example_colorized.mp4"), "result")
-        self.assertEqual(inferPreviewSlot("./bwImages/example.png"), "source")
+        self.assertEqual(inferPreviewSlot("./outputs/colorizedImages/example_colorized.png"), "result")
+        self.assertEqual(inferPreviewSlot("./outputs/colorizedVideos/example_colorized.mp4"), "result")
+        self.assertEqual(inferPreviewSlot("./examples/bwImages/example.png"), "source")
 
     def testClearPreviewsReleasesResourcesAndResetsState(self):
         helper = MediaDisplayHelper()
