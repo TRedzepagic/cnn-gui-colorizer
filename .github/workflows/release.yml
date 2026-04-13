@@ -21,7 +21,7 @@ jobs:
           - runner: windows-latest
             archive_name: cnn-colorizer-windows-x64.zip
             archive_source: dist/cnn-colorizer
-          - runner: macos-13
+          - runner: macos-15
             archive_name: cnn-colorizer-macos-x64-app.zip
             archive_source: dist/cnn-colorizer.app
 

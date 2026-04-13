@@ -32,7 +32,7 @@ def main():
     args = parseArgs()
     missingAssets = getMissingModelAssets()
     if missingAssets:
-        if args.skipModelDownload:
+        if args.skip_model_download:
             print(
                 "Missing model assets: {0}. Run scripts/download_model.py first.".format(
                     ", ".join(MODEL_FILE_NAMES[assetName] for assetName in missingAssets)
