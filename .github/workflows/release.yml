@@ -1,0 +1,58 @@
+name: Release Binaries
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            archive_name: cnn-colorizer-linux-x64.tar.gz
+            archive_source: dist/cnn-colorizer
+          - runner: windows-latest
+            archive_name: cnn-colorizer-windows-x64.zip
+            archive_source: dist/cnn-colorizer
+          - runner: macos-13
+            archive_name: cnn-colorizer-macos-x64-app.zip
+            archive_source: dist/cnn-colorizer.app
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Build portable bundle
+        run: python scripts/build_binary.py --clean
+
+      - name: Package release archive
+        run: python scripts/package_release.py --source ${{ matrix.archive_source }} --output dist/${{ matrix.archive_name }}
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive_name }}
+          path: dist/${{ matrix.archive_name }}
+
+      - name: Upload archive to GitHub release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload ${{ github.event.release.tag_name }} dist/${{ matrix.archive_name }} --clobber

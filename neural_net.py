@@ -1,12 +1,31 @@
+import os
+
 import cv2
 import numpy as np
+from model_utils import getModelAssetPaths, getMissingModelAssets, getModelDirectory
+
 
 class NeuralNet():
     def __init__(self) -> None:
-        self.prototxt = 'model/colorization_deploy_v2.prototxt'
-        self.model = 'model/colorization_release_v2.caffemodel'
-        # Probabilities for 313 quantized colour blocks; Points in the quantized ab space.
-        self.points = 'model/pts_in_hull.npy'
+        modelAssets = getModelAssetPaths()
+        self.prototxt = modelAssets["prototxt"]
+        self.model = modelAssets["caffemodel"]
+        self.points = modelAssets["points"]
+
+        missingAssets = getMissingModelAssets()
+        if missingAssets:
+            missingFileList = ", ".join(
+                os.path.basename(modelAssets[assetName])
+                for assetName in missingAssets
+            )
+            raise FileNotFoundError(
+                "Missing model assets in {0}: {1}. Run `python3 scripts/download_model.py` "
+                "or set COLORIZER_MODEL_DIR to a directory containing the model files.".format(
+                    getModelDirectory(),
+                    missingFileList,
+                )
+            )
+
         self.net = cv2.dnn.readNetFromCaffe(self.prototxt, self.model)
         self.pts = np.load(self.points)
 
