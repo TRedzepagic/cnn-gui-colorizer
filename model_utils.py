@@ -122,7 +122,7 @@ def _validateDownloadedCaffemodel(destinationPath):
         )
 
 
-def _downloadGoogleDriveFile(fileUrl, destinationPath, quiet=False):
+def _downloadGoogleDriveFile(fileUrl, destinationPath, quiet=False, progressCallback=None):
     gdown = _getGdownModule()
     os.makedirs(os.path.dirname(destinationPath), exist_ok=True)
 
@@ -139,6 +139,10 @@ def _downloadGoogleDriveFile(fileUrl, destinationPath, quiet=False):
 
     if downloadSignature is None or "fuzzy" in downloadSignature.parameters:
         downloadKwargs["fuzzy"] = True
+    if progressCallback is not None and (
+        downloadSignature is None or "progress" in downloadSignature.parameters
+    ):
+        downloadKwargs["progress"] = progressCallback
 
     downloadResult = gdown.download(**downloadKwargs)
     if not downloadResult or not os.path.exists(destinationPath):
@@ -147,15 +151,20 @@ def _downloadGoogleDriveFile(fileUrl, destinationPath, quiet=False):
     _validateDownloadedCaffemodel(destinationPath)
 
 
-def downloadFile(url, destinationPath, quiet=False):
+def downloadFile(url, destinationPath, quiet=False, progressCallback=None):
     if "drive.google.com" in url:
-        _downloadGoogleDriveFile(url, destinationPath, quiet=quiet)
+        _downloadGoogleDriveFile(
+            url,
+            destinationPath,
+            quiet=quiet,
+            progressCallback=progressCallback,
+        )
         return
 
     _downloadFileFromUrl(url, destinationPath, quiet=quiet)
 
 
-def downloadMissingModelAssets(modelDir=None, force=False, quiet=False):
+def downloadMissingModelAssets(modelDir=None, force=False, quiet=False, progressCallback=None):
     modelDir = modelDir or getModelDirectory()
     assetPaths = getModelAssetPaths(modelDir)
     downloadedAssets = []
@@ -166,7 +175,13 @@ def downloadMissingModelAssets(modelDir=None, force=False, quiet=False):
 
         if not quiet:
             print("Fetching {0}...".format(MODEL_FILE_NAMES[assetName]))
-        downloadFile(MODEL_DOWNLOAD_URLS[assetName], assetPath, quiet=quiet)
+        assetProgressCallback = progressCallback if assetName == "caffemodel" else None
+        downloadFile(
+            MODEL_DOWNLOAD_URLS[assetName],
+            assetPath,
+            quiet=quiet,
+            progressCallback=assetProgressCallback,
+        )
         downloadedAssets.append(assetName)
 
     return downloadedAssets

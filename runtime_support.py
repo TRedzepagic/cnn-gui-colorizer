@@ -1,6 +1,8 @@
 import os
 import sys
 import ctypes
+import subprocess
+import webbrowser
 
 
 APP_PROCESS_NAME = "cnn-colorizer"
@@ -68,3 +70,33 @@ def configureProcessIdentity(processName=APP_PROCESS_NAME):
         applied = _configureLinuxProcessName(processName) or applied
 
     return applied
+
+
+def openExternalUrl(url):
+    if os.name == "nt":
+        try:
+            os.startfile(url)
+            return True
+        except OSError:
+            pass
+
+    if sys.platform == "darwin":
+        try:
+            completedProcess = subprocess.run(["open", url], check=False)
+            if completedProcess.returncode == 0:
+                return True
+        except OSError:
+            pass
+
+    if os.name == "posix":
+        try:
+            completedProcess = subprocess.run(["xdg-open", url], check=False)
+            if completedProcess.returncode == 0:
+                return True
+        except OSError:
+            pass
+
+    try:
+        return bool(webbrowser.open(url))
+    except Exception:
+        return False

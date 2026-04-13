@@ -16,6 +16,8 @@ class MainLayoutTests(unittest.TestCase):
         main.modelDownloadQueue = None
         main.modelDownloadInProgress = False
         main.modelDownloadStatusMessage = ""
+        main.modelDownloadProgressValue = 0.0
+        main.modelDownloadProgressOverlay = "0%"
         main.displayQueue = None
         main.colorizer = None
         main.mediaDisplayHelper = None
@@ -204,6 +206,37 @@ class MainLayoutTests(unittest.TestCase):
             "Model download failed: network down",
             "CRITICAL",
         )
+
+    def testProcessModelDownloadEventsUpdatesProgressState(self):
+        main.modelDownloadQueue = queue.Queue()
+        main.modelDownloadQueue.put(
+            {
+                "status": "progress",
+                "progressValue": 0.5,
+                "overlay": "50% (61.5 MB / 123.0 MB)",
+            }
+        )
+        main.modelDownloadInProgress = True
+
+        with mock.patch("main.syncModelDialogState") as syncDialogMock:
+            main.processModelDownloadEvents()
+
+        self.assertEqual(main.modelDownloadProgressValue, 0.5)
+        self.assertEqual(main.modelDownloadProgressOverlay, "50% (61.5 MB / 123.0 MB)")
+        syncDialogMock.assert_called_once_with()
+        self.assertTrue(main.modelDownloadInProgress)
+
+    def testOpenModelDownloadPageUsesExternalUrlHelper(self):
+        with mock.patch("main.openExternalUrl", return_value=True) as openExternalUrlMock:
+            with mock.patch("main.syncModelDialogState") as syncDialogMock:
+                main.openModelDownloadPage()
+
+        openExternalUrlMock.assert_called_once_with(main.MODEL_MANUAL_DOWNLOAD_URL)
+        self.assertEqual(
+            main.modelDownloadStatusMessage,
+            "Opened the model download page in the default browser.",
+        )
+        syncDialogMock.assert_called_once_with()
 
     def testGetPrimaryActionLabelUsesStartColorizationWhenSourcePreviewHasNoResult(self):
         main.mediaDisplayHelper = mock.Mock()

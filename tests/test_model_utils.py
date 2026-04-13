@@ -53,11 +53,13 @@ class ModelUtilsTests(unittest.TestCase):
             model_utils.MODEL_DOWNLOAD_URLS["caffemodel"],
             assetPaths["caffemodel"],
             quiet=True,
+            progressCallback=None,
         )
         downloadFileMock.assert_any_call(
             model_utils.MODEL_DOWNLOAD_URLS["points"],
             assetPaths["points"],
             quiet=True,
+            progressCallback=None,
         )
 
     def testDownloadFileUsesGdownForGoogleDriveUrls(self):
@@ -69,6 +71,7 @@ class ModelUtilsTests(unittest.TestCase):
                 inspect.Parameter("output", inspect.Parameter.POSITIONAL_OR_KEYWORD),
                 inspect.Parameter("quiet", inspect.Parameter.POSITIONAL_OR_KEYWORD),
                 inspect.Parameter("fuzzy", inspect.Parameter.POSITIONAL_OR_KEYWORD),
+                inspect.Parameter("progress", inspect.Parameter.POSITIONAL_OR_KEYWORD),
             ]
         )
 
@@ -82,6 +85,7 @@ class ModelUtilsTests(unittest.TestCase):
                     model_utils.MODEL_DOWNLOAD_URLS["caffemodel"],
                     destinationPath,
                     quiet=True,
+                    progressCallback=mock.sentinel.progressCallback,
                 )
 
         fakeGdown.download.assert_called_once_with(
@@ -89,6 +93,7 @@ class ModelUtilsTests(unittest.TestCase):
             output=destinationPath,
             quiet=True,
             fuzzy=True,
+            progress=mock.sentinel.progressCallback,
         )
 
     def testDownloadFileUsesLegacyGdownSignatureWithoutFuzzy(self):

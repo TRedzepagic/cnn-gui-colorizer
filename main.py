@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import webbrowser
 
 import dearpygui.dearpygui as dpg
 
@@ -17,7 +16,7 @@ from model_utils import (
     getModelDirectory,
     hasModelAssets,
 )
-from runtime_support import APP_WINDOW_TITLE, configureProcessIdentity
+from runtime_support import APP_WINDOW_TITLE, configureProcessIdentity, openExternalUrl
 from work_object import ColorizationWorkObject
 
 DEFAULT_VIEWPORT_WIDTH = 1280
@@ -41,6 +40,8 @@ previewClearPending = False
 modelDownloadQueue = None
 modelDownloadInProgress = False
 modelDownloadStatusMessage = ""
+modelDownloadProgressValue = 0.0
+modelDownloadProgressOverlay = "0%"
 
 
 def formatStartupError(prefix, error):
@@ -85,6 +86,26 @@ def requestPreviewClear():
     previewClearPending = True
 
 
+def formatByteCount(byteCount):
+    if byteCount is None or byteCount < 0:
+        return "Unknown size"
+
+    units = ["B", "KB", "MB", "GB"]
+    value = float(byteCount)
+    for unit in units:
+        if value < 1024.0 or unit == units[-1]:
+            if unit == "B":
+                return "{0:.0f} {1}".format(value, unit)
+            return "{0:.1f} {1}".format(value, unit)
+        value /= 1024.0
+
+
+def updateModelDownloadProgressState(progressValue=0.0, overlay="0%"):
+    global modelDownloadProgressValue, modelDownloadProgressOverlay
+    modelDownloadProgressValue = max(0.0, min(progressValue, 1.0))
+    modelDownloadProgressOverlay = overlay
+
+
 def getModelMissingMessage():
     missingModelFiles = getMissingModelFileNames()
     if not missingModelFiles:
@@ -109,6 +130,13 @@ def syncModelDialogState():
 
     if dpg.does_item_exist("downloadModelButton"):
         dpg.configure_item("downloadModelButton", enabled=not modelDownloadInProgress)
+    if dpg.does_item_exist("modelMissingDialogProgress"):
+        dpg.configure_item("modelMissingDialogProgress", show=modelDownloadInProgress)
+        dpg.set_value("modelMissingDialogProgress", modelDownloadProgressValue)
+        dpg.configure_item(
+            "modelMissingDialogProgress",
+            overlay=modelDownloadProgressOverlay,
+        )
 
 
 def showModelMissingDialog(statusMessage=None):
@@ -342,9 +370,37 @@ def processPendingPreviewClear():
     previewClearPending = False
 
 
+def reportModelDownloadProgress(currentBytes, totalBytes):
+    if modelDownloadQueue is None:
+        return
+
+    progressValue = 0.0
+    if totalBytes:
+        progressValue = max(0.0, min(float(currentBytes) / float(totalBytes), 1.0))
+
+    overlay = "Downloading {0}".format(formatByteCount(currentBytes))
+    if totalBytes:
+        overlay = "{0}% ({1} / {2})".format(
+            int(progressValue * 100),
+            formatByteCount(currentBytes),
+            formatByteCount(totalBytes),
+        )
+
+    modelDownloadQueue.put(
+        {
+            "status": "progress",
+            "progressValue": progressValue,
+            "overlay": overlay,
+        }
+    )
+
+
 def _downloadModelAssetsWorker():
     try:
-        downloadedAssets = downloadMissingModelAssets(quiet=True)
+        downloadedAssets = downloadMissingModelAssets(
+            quiet=True,
+            progressCallback=reportModelDownloadProgress,
+        )
         modelDownloadQueue.put(
             {
                 "status": "success",
@@ -368,6 +424,7 @@ def startModelDownload():
 
     modelDownloadInProgress = True
     modelDownloadStatusMessage = "Downloading model files..."
+    updateModelDownloadProgressState(0.0, "Preparing download...")
     syncModelDialogState()
     Thread(target=_downloadModelAssetsWorker, daemon=True).start()
 
@@ -376,7 +433,7 @@ def openModelDownloadPage():
     global modelDownloadStatusMessage
 
     try:
-        opened = webbrowser.open(MODEL_MANUAL_DOWNLOAD_URL)
+        opened = openExternalUrl(MODEL_MANUAL_DOWNLOAD_URL)
         if not opened:
             raise RuntimeError("Unable to open the model download page in a browser.")
 
@@ -398,11 +455,21 @@ def processModelDownloadEvents():
     try:
         while True:
             downloadEvent = modelDownloadQueue.get_nowait()
+
+            if downloadEvent["status"] == "progress":
+                updateModelDownloadProgressState(
+                    downloadEvent["progressValue"],
+                    downloadEvent["overlay"],
+                )
+                syncModelDialogState()
+                continue
+
             modelDownloadInProgress = False
 
             if downloadEvent["status"] == "success":
                 downloadedAssets = downloadEvent.get("downloadedAssets") or []
                 modelDownloadStatusMessage = ""
+                updateModelDownloadProgressState(0.0, "0%")
                 if logger is not None:
                     if downloadedAssets:
                         logger.logMsg("Main", "Model download complete.", "INFO")
@@ -413,6 +480,7 @@ def processModelDownloadEvents():
                 if hasModelAssets() and dpg.does_item_exist("modelMissingDialog"):
                     dpg.hide_item("modelMissingDialog")
             else:
+                updateModelDownloadProgressState(0.0, "0%")
                 errorMessage = "Model download failed: {0}".format(downloadEvent["message"])
                 if logger is not None:
                     logger.logMsg("Main", errorMessage, "CRITICAL")
@@ -636,7 +704,7 @@ if __name__ == "__main__":
             modal=True,
             show=False,
             no_resize=True,
-            no_move=True,
+            no_move=False,
             no_collapse=True,
             no_close=True,
             autosize=True,
@@ -644,6 +712,13 @@ if __name__ == "__main__":
             dpg.add_text("The model weights are required before colorization can start.")
             dpg.add_text(tag="modelMissingDialogMessage", default_value="", wrap=520)
             dpg.add_text(tag="modelMissingDialogStatus", default_value="", wrap=520)
+            dpg.add_progress_bar(
+                tag="modelMissingDialogProgress",
+                default_value=0.0,
+                overlay="0%",
+                show=False,
+                width=520,
+            )
             with dpg.group(horizontal=True):
                 dpg.add_button(
                     label="Download model",
