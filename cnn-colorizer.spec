@@ -8,11 +8,18 @@ from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, co
 projectRoot = os.path.abspath(".")
 modelDir = os.path.join(projectRoot, "model")
 isMacOS = sys.platform == "darwin"
+bundledModelFiles = [
+    "colorization_deploy_v2.prototxt",
+    "pts_in_hull.npy",
+]
 
 datas = collect_data_files("dearpygui")
 datas += collect_data_files("dearpygui_ext")
 if os.path.isdir(modelDir):
-    datas.append((modelDir, "model"))
+    for modelFileName in bundledModelFiles:
+        modelFilePath = os.path.join(modelDir, modelFileName)
+        if os.path.exists(modelFilePath):
+            datas.append((modelFilePath, "model"))
 
 binaries = collect_dynamic_libs("dearpygui")
 binaries += collect_dynamic_libs("cv2")

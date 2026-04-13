@@ -65,7 +65,7 @@ Build the distributable bundle:
 python3 scripts/build_binary.py --clean
 ```
 
-The output is written to `dist/cnn-colorizer/`. The build script downloads missing model assets first, then bundles the `model/` directory into the application.
+The output is written to `dist/cnn-colorizer/`. The packaged app includes the lightweight model metadata files and downloads the `colorization_release_v2.caffemodel` on demand through the in-app model dialog.
 
 For Windows and macOS, build on the target OS. The PyInstaller spec in this repository is intended for Linux, Windows, and macOS native builds, but final binaries should still be produced and smoke-tested on each platform separately.
 
