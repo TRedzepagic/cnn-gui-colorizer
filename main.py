@@ -264,6 +264,10 @@ def handlePrimaryAction():
     dpg.show_item("file_dialog_tag")
 
 def getGUIStartupError():
+    # Windows: GUI apps do not rely on DISPLAY/WAYLAND_DISPLAY
+    if os.name == "nt":
+        return None
+    
     displayName = os.environ.get("DISPLAY")
     waylandDisplay = os.environ.get("WAYLAND_DISPLAY")
 
